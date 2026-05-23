@@ -10,29 +10,30 @@ class Program
         string bucketName = "keithlong-art-photos";
         string region = "us-east-1";
 
+        if (args.Any(a => a is "-h" or "--help" or "-?" or "/?" or "?"))
+        {
+            PrintUsage();
+            return;
+        }
+        foreach (var a in args)
+        {
+            if ((a.StartsWith("-") || a.StartsWith("/")) && a is not ("--unique" or "--no-recurse"))
+            {
+                Console.WriteLine($"Unknown option: {a}");
+                Console.WriteLine();
+                PrintUsage();
+                Environment.ExitCode = 1;
+                return;
+            }
+        }
+
         bool unique = args.Any(a => a == "--unique");
         bool noRecurse = args.Any(a => a == "--no-recurse");
         var positional = args.Where(a => a != "--unique" && a != "--no-recurse").ToArray();
 
         if (positional.Length < 2)
         {
-            Console.WriteLine("Usage: ReadAwsBucket <prefix> <outputFile> [format] [--unique] [--no-recurse]");
-            Console.WriteLine();
-            Console.WriteLine("  prefix        S3 prefix to filter (e.g. \"scans/\"; use \"\" for whole bucket)");
-            Console.WriteLine("  outputFile    text file to write the list to (one entry per line)");
-            Console.WriteLine("  format        line template, default \"<prefix><filename><ext>\"");
-            Console.WriteLine("  --unique      drop duplicate lines (preserves first-seen order)");
-            Console.WriteLine("  --no-recurse  list only files directly under the prefix; skip subdirectories");
-            Console.WriteLine();
-            Console.WriteLine("  Tokens replaced in format:");
-            Console.WriteLine("    <prefix>    directory portion of key with trailing slash (e.g. \"scans/\")");
-            Console.WriteLine("    <filename>  base filename without extension (e.g. \"KLA_1_1\")");
-            Console.WriteLine("    <ext>       file extension with leading dot (e.g. \".tif\")");
-            Console.WriteLine();
-            Console.WriteLine("  Examples:");
-            Console.WriteLine("    dotnet run -- scans/ scans.txt                                    # full keys, recursive");
-            Console.WriteLine("    dotnet run -- scans/ scans.txt \"<filename>\"                       # base names");
-            Console.WriteLine("    dotnet run -- scans/ scans.txt \"<filename>\" --unique --no-recurse # top-level deduped");
+            PrintUsage();
             return;
         }
 
@@ -104,5 +105,29 @@ class Program
         {
             Console.WriteLine($"Error: {ex.Message}");
         }
+    }
+
+    static void PrintUsage()
+    {
+        Console.WriteLine("Usage: ReadAwsBucket <prefix> <outputFile> [format] [--unique] [--no-recurse]");
+        Console.WriteLine();
+        Console.WriteLine("  prefix        S3 prefix to filter (e.g. \"scans/\"; use \"\" for whole bucket)");
+        Console.WriteLine("  outputFile    text file to write the list to (one entry per line)");
+        Console.WriteLine("  format        line template, default \"<prefix><filename><ext>\"");
+        Console.WriteLine();
+        Console.WriteLine("Options:");
+        Console.WriteLine("  --unique               drop duplicate lines (preserves first-seen order)");
+        Console.WriteLine("  --no-recurse           list only files directly under the prefix; skip subdirectories");
+        Console.WriteLine("  -h, --help, -?, /?, ?  show this help and exit");
+        Console.WriteLine();
+        Console.WriteLine("  Tokens replaced in format:");
+        Console.WriteLine("    <prefix>    directory portion of key with trailing slash (e.g. \"scans/\")");
+        Console.WriteLine("    <filename>  base filename without extension (e.g. \"KLA_1_1\")");
+        Console.WriteLine("    <ext>       file extension with leading dot (e.g. \".tif\")");
+        Console.WriteLine();
+        Console.WriteLine("  Examples:");
+        Console.WriteLine("    dotnet run -- scans/ scans.txt                                    # full keys, recursive");
+        Console.WriteLine("    dotnet run -- scans/ scans.txt \"<filename>\"                       # base names");
+        Console.WriteLine("    dotnet run -- scans/ scans.txt \"<filename>\" --unique --no-recurse # top-level deduped");
     }
 }
